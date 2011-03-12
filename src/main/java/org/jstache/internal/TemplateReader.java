@@ -9,6 +9,12 @@ public interface TemplateReader{
 	 *
 	 * @return
 	 */
+	public char peek();
+
+	/**
+	 *
+	 * @return
+	 */
 	public boolean hasRemaining();
 
 	/**

@@ -32,9 +32,9 @@ public class BeanPresenter implements Presenter{
 				final String name=method.getName();
 				String key=null;
 				if(name.startsWith("get"))
-					key=name.substring(2,3).toLowerCase()+name.substring(4);
+					key=name.substring(3,4).toLowerCase()+name.substring(4);
 				else if(method.getName().startsWith("is"))
-					key=name.substring(1,2).toLowerCase()+name.substring(3);
+					key=name.substring(2,3).toLowerCase()+name.substring(3);
 				mappings.put(key,new CachedMethod(method));
 			}
 		}

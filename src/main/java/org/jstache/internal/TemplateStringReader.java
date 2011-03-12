@@ -10,6 +10,11 @@ public class TemplateStringReader implements TemplateReader{
 	}
 
 	@Override
+	public char peek(){
+		return buf.charAt(0);
+	}
+
+	@Override
 	public boolean hasRemaining(){
 		return buf.hasRemaining();
 	}
@@ -55,11 +60,25 @@ public class TemplateStringReader implements TemplateReader{
 		return this;
 	}
 
+//	@Override
+//	public boolean match(char[] str){
+//		for(int i=0; i<str.length; ++i){
+//			if(str[i] != buf.get()){
+//				this.rewind(i);
+//				return false;
+//			}
+//		}
+//		return true;
+//	}
+
 	@Override
 	public boolean match(char[] str){
-		for(int i=0; i<str.length; ++i){
-			if(str[i]!=buf.get()){
-				this.rewind(i);
+		if(buf.remaining() < str.length){
+			return false;
+		}
+		for(int i = 0; i < str.length; ++i){
+			if(str[i] != buf.get()){
+				rewind(i);
 				return false;
 			}
 		}

@@ -2,25 +2,20 @@ package org.jstache.internal;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.LinkedList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Pattern;
 import org.jstache.ParseException;
-
-import static org.jstache.Constants.CLOSE;
-import static org.jstache.Constants.OPEN;
 
 /**
  * A TemplateParser is an object, given a string of text, that will parse the
  * text into tokens according to the WIT Template grammar.
  */
 public final class Parser{
-	private static final Pattern tagKeyRegex=Pattern.compile("[#/^]?\\w*");
-	private final BlockStack stack=new BlockStack();
-	private final TemplateReader reader;
+	private final List<TokenItem> tokens;
 
 	public Parser(String template){
-		reader=new TemplateStringReader(template);
+		tokens = Collections.unmodifiableList(new Lexer(template).run());
 	}
 
 	public Parser(Reader template){
@@ -31,7 +26,7 @@ public final class Parser{
 			while((read=template.read(cbuf))!=-1){
 				builder.append(cbuf,0,read);
 			}
-			reader = new TemplateStringReader(builder.toString());
+			tokens = Collections.unmodifiableList(new Lexer(builder.toString()).run());
 		}
 		catch(IOException e){
 			throw new RuntimeException(e);
@@ -39,114 +34,43 @@ public final class Parser{
 	}
 
 	public BlockElement execute(){
-		while(reader.hasRemaining())
-			findOpenDelim();
-		return stack.getRootBlock();
+		BlockElement root = new BlockElement("__root__");
+		Iterator<TokenItem> items = tokens.iterator();
+		execute(items,root);
+		return root;
 	}
 
-	private void findOpenDelim(){
-		reader.mark();
-		while(reader.hasRemaining()){
-			char c=reader.get();
-			if(c==OPEN[0] && reader.rewind(1).match(OPEN)){
-				String token=reader.sliceExcept(OPEN.length);
-				if(!token.isEmpty())
-					stack.peek().add(new StringElement(token));
-				findCloseDelim();
+	private void execute(Iterator<TokenItem> items,BlockElement block){
+		while(items.hasNext()){
+			TokenItem item = items.next();
+			Token token = item.getToken();
+			if(token == Token.LITERAL){
+				block.add(new StringElement(item.getValue()));
 			}
-		}
-		String token=reader.slice();
-		if(!token.isEmpty()){
-			stack.peek().add(new StringElement(token));
-		}
-	}
-
-	private void findCloseDelim(){
-		reader.mark();
-		while(reader.hasRemaining()){
-			char c=reader.get();
-			if(c==CLOSE[0] && reader.rewind(1).match(CLOSE)){
-				String token=reader.sliceExcept(CLOSE.length);
-				if(token.isEmpty()){
-					throw new ParseException("cannot have an empty key");
-				}
-				if(!tagKeyRegex.matcher(token).matches()){
-					throw new ParseException("token key may only contain word characters");
-				}
-				char head=token.charAt(0);
-				if(head=='#'){
-					BlockElement block=new BlockElement(token.substring(1));
-					stack.peek().add(block);
-					stack.push(block);
-				}
-				else if(head=='^'){
-					BlockElement block=new BlockElement(token.substring(1),true);
-					stack.peek().add(block);
-					stack.push(block);
-				}
-				else if(head=='/'){
-					stack.pop();
+			else if(token == Token.VARIABLE){
+				block.add(new VariableElement(item.getValue()));
+			}
+			else if(token == Token.BLOCK){
+				BlockElement next = new BlockElement(item.getValue());
+				block.add(next);
+				execute(items,next);
+			}
+			else if(token == Token.INVERTED){
+				BlockElement next = new BlockElement(item.getValue(),true);
+				block.add(next);
+				execute(items,next);
+			}
+			else if(token == Token.END){
+				if(item.getValue().equals(block.getKey())){
+					return;
 				}
 				else{
-					stack.peek().add(new VariableElement(token));
+					throw new ParseException("Found {{"+item.getValue()+"}} but expected {{"+block.getKey()+"}}.");
 				}
-				reader.mark();
-				return;
 			}
 		}
-		// Reached the end and didn't find a close delim...
-		throw new ParseException("Expecting a close delimiter");
-	}
-
-	/**
-	 * Aids in parsing the template by providing scope for template blocks.
-	 *
-	 * There will always be one block on the stack, namely the implicit root
-	 * block. This block represent the entire document and cannot be removed.
-	 */
-	class BlockStack{
-		private final List<BlockElement> stack = new LinkedList<BlockElement>();
-
-		/**
-		 * Creates a block stack with an implicit root.
-		 */
-		public BlockStack(){
-			stack.add(new BlockElement("__root__"));
-		}
-
-		/**
-		 * Adds the given block to the top of the stack.
-		 */
-		public void push(BlockElement block){
-			stack.add(0,block);
-		}
-
-		/**
-		 * Returns a reference to the block at the top of the stack.
-		 */
-		public BlockElement peek(){
-			return (BlockElement) stack.get(0);
-		}
-
-		/**
-		 * This method acts like peek() if there is only one block token on the
-		 * stack. Otherwise this will remove the block token from the topic of the
-		 * stack and return it.
-		 */
-		public BlockElement pop(){
-			return (BlockElement) (stack.size()==1 ? stack.get(0) : stack.remove(0));
-		}
-
-		/**
-		 * Returns the block token at the bottom of the stack. This is called the
-		 * root block and will always be at the bottom of the stack.
-		 */
-		public BlockElement getRootBlock(){
-			return stack.get(stack.size()-1);
-		}
-
-		public void asdf(){
-
+		if(!block.getKey().equals("__root__")){
+			throw new ParseException("Expecting a close delimiter");
 		}
 	}
 }

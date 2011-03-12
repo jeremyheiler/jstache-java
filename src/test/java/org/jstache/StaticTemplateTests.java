@@ -14,7 +14,9 @@ public class StaticTemplateTests{
 
 	@Test
 	public void testNonEmptyTemplate(){
-		assertTrue(Template.parse("hello").render(emptyMap).equals("hello"));
+		Template template = Template.parse("hello");
+		String output = template.render(emptyMap);
+		assertTrue(output.equals("hello"));
 	}
 
 	@Test

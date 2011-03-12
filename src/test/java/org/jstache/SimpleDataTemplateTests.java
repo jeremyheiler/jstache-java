@@ -60,7 +60,9 @@ public class SimpleDataTemplateTests{
 
 	@Test
 	public void testTrueIfBlockWithVariable(){
-		assertTrue(Template.parse("{{#question}}Hey {{name}}, how are you?{{/question}}").render(data).equals("Hey Sophie, how are you?"));
+		Template template = Template.parse("{{#question}}Hey {{name}}, how are you?{{/question}}");
+		String output = template.render(data);
+		assertTrue(output.equals("Hey Sophie, how are you?"));
 	}
 
 	@Test

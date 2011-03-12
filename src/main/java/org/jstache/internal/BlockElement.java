@@ -49,6 +49,15 @@ public class BlockElement extends KeyedElement implements Element,Iterable<Eleme
 	public String toString(Presenter presenter){
 		Object value = presenter.get(key);
 		boolean visible = (value != null && value != Boolean.FALSE && value != new Integer(0));
+
+		if(value instanceof Iterable){
+			StringBuilder buf = new StringBuilder();
+			for(Object thing : (Iterable<?>)value){
+				buf.append(new Renderer(elements,new BeanPresenter(thing)).execute());
+			}
+			return buf.toString();
+		}
+
 		return (visible ^ inverted) ? new Renderer(elements,presenter).execute() : "";
 	}
 
