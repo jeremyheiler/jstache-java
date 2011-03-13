@@ -9,12 +9,14 @@ import org.jstache.ParseException;
 public class Lexer{
 	private final Pattern keyPattern = Pattern.compile("[#/^]?[a-zA-Z_][a-zA-Z0-9_]*");
 	private final List<TokenItem> tokens = new ArrayList<TokenItem>();
-	private final CharBuffer begin = CharBuffer.wrap("{{");
-	private final CharBuffer end = CharBuffer.wrap("}}");
+	private final CharBuffer begin;
+	private final CharBuffer end;
 	private final CharBuffer buf;
 
-	public Lexer(String template){
+	public Lexer(String template,String begin,String end){
 		buf = CharBuffer.wrap(template).asReadOnlyBuffer();
+		this.begin = CharBuffer.wrap(begin);
+		this.end = CharBuffer.wrap(end);
 	}
 
 	public List<TokenItem> run(){
@@ -88,7 +90,7 @@ public class Lexer{
 			throw new ParseException("An empty key was found.");
 		}
 		if(!keyPattern.matcher(key).matches()){
-			throw new ParseException("The tag key {{"+key+"}} is invalid.");
+			throw new ParseException("The tag "+begin+key+end+" is invalid.");
 		}
 		tokens.add(new TokenItem(type,key));
 		buf.limit(buf.capacity()).position(position + end.length()).mark();

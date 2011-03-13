@@ -13,26 +13,39 @@ import org.jstache.internal.Parser;
 import org.jstache.internal.Renderer;
 
 /**
- * A Template object represents a parsed logic-less template.
- *
- * Instances of Template are immutable and completely thread-safe. Any changes
- * must be done made from the templates source and then parsed into a new
- * Template instance.
+ * An instance of <tt>Template</tt> represents a parsed, logic-less template.
  */
-public class Template{
+public final class Template{
 	//private static final Logger log = LoggerFactory.getLogger(Template.class);
 	private final BlockElement root;
+	private final String begin;
+	private final String end;
 
-	/**
-	 * Use one of the static parse methods to create a Template.
-	 */
-	private Template(Reader template){
-		this.root = new Parser(template).execute();
+	Template(Reader template){
+		this(template,"{{","}}");
 	};
+
+	Template(Reader template,String begin,String end){
+		this.root = new Parser(template,begin,end).execute();
+		this.begin = begin;
+		this.end = end;
+	};
+	
+	public String getBegin(){
+		return begin;
+	}
+	
+	public String getEnd(){
+		return end;
+	}
+	
+	public static TemplateBuilder with(String begin,String end){
+		return new TemplateBuilder(begin,end);
+	}
 
 	/**
 	 * Creates a Template from from contents of the given {@link Reader}.
-	 *
+	 * 
 	 * @param template
 	 *            A Reader that wraps a template.
 	 * @return A parsed Template that can be rendered.
@@ -79,24 +92,24 @@ public class Template{
 	 *
 	 * @param presenter
 	 * @return The rendered template.
+	 * @see MapPresenter
+	 * @see BeanPresenter
 	 */
 	public String render(Presenter presenter){
 		return new Renderer(root.getElements(),presenter).execute();
 	}
 
 	/**
-	 * <p>
-	 * Renders the template with the values from the given Map. This method
-	 * utilizes the {@link MapPresenter}.
-	 * </p>
-	 *
+	 * Renders the template with the values from the given <tt>Map</tt>.
+	 * 
 	 * @param data
 	 *            The map of data with the key being the tag keys and the value
 	 *            being the values to be rendered into the template.
 	 * @return The rendered template.
+	 * @see MapPresenter
 	 */
 	public String render(Map<String,?> data){
-		return new Renderer(root.getElements(),new MapPresenter(data)).execute();
+		return render(new MapPresenter(data));
 	}
 
 	/**
@@ -115,25 +128,7 @@ public class Template{
 	 * @return The rendered template.
 	 * @see BeanPresenter
 	 */
-	public String render(Object bean){
-		return new Renderer(root.getElements(),new BeanPresenter(bean)).execute();
-	}
-
-	/**
-	 * <p>
-	 * Returns an unmodifiable list of the {@link Element}s that make up the
-	 * parsed Template. All {@link Element} instances are immutable, thus making
-	 * use of this list completely thread-safe.
-	 * <p>
-	 * <p>
-	 * Currently there is no way to modify the template once it has been parsed.
-	 * If you wish to modify a template, you must change the input text and
-	 * parse it into a new Template instance.
-	 * </p>
-	 *
-	 * @return An unmodifiable list of the elements that make up the Template.
-	 */
-	public BlockElement getImplicitRoot(){
-		return root;
+	public <T> String render(T bean){
+		return render(new BeanPresenter<T>(bean));
 	}
 }

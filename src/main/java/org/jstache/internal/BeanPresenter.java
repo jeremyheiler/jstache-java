@@ -11,15 +11,15 @@ import org.jstache.util.Strings;
 /**
  *
  */
-public class BeanPresenter implements Presenter{
+public class BeanPresenter<T> implements Presenter{
 	private final Map<String,CachedMethod> mappings=new HashMap<String,CachedMethod>();
-	private final Object bean;
+	private final T bean;
 
 	/**
 	 *
 	 * @param bean
 	 */
-	public BeanPresenter(Object bean){
+	public BeanPresenter(T bean){
 		this.bean=bean;
 		createMappings();
 	}
@@ -38,6 +38,14 @@ public class BeanPresenter implements Presenter{
 				mappings.put(key,new CachedMethod(method));
 			}
 		}
+	}
+	
+	/**
+	 * Returns the bean given to the presenter.
+	 * @return the bean given to the presenter.
+	 */
+	public T getBean(){
+		return bean;
 	}
 
 	/**
