@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.jstache</groupId>
 	<artifactId>jstache</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT</version>
 	<name>JStache</name>
 	<description>A template toolkit for Java</description>
 	<build>
