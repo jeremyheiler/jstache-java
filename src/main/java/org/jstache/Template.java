@@ -3,8 +3,11 @@ package org.jstache;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.net.URL;
 import java.util.Map;
 import org.jstache.internal.BeanPresenter;
 import org.jstache.internal.BlockElement;
@@ -21,20 +24,45 @@ public final class Template{
 	private final String begin;
 	private final String end;
 
+	/**
+	 * Creates an unparsed template configured to parse the standard
+	 * "mustaches" for delimiters, that is "{{" and "}}".
+	 * 
+	 * @param template A <tt>Reader that represents the raw template.
+	 * @see #with(String, String)
+	 * @see #parse(Reader)
+	 */
 	Template(Reader template){
 		this(template,"{{","}}");
 	};
-
+	
+	/**
+	 * Creates an unparsed template configured to parse with the given begin and
+	 * end delimiters. Use {@link #Template(Reader)} to use "mustaches" for the
+	 * delimiters, that is "{{" and "}}".
+	 * 
+	 * @param template A <tt>Reader that represents the raw template.
+	 * @see #with(String, String)
+	 * @see #parse(Reader)
+	 */
 	Template(Reader template,String begin,String end){
 		this.root = new Parser(template,begin,end).execute();
 		this.begin = begin;
 		this.end = end;
 	};
 	
+	/**
+	 * Returns the begin delimiter configured for a template.
+	 * @return the begin delimiter configured for a template.
+	 */
 	public String getBegin(){
 		return begin;
 	}
 	
+	/**
+	 * Returns the end delimiter configured for a template.
+	 * @return the end delimiter configured for a template.
+	 */
 	public String getEnd(){
 		return end;
 	}
@@ -78,6 +106,19 @@ public final class Template{
 		return new Template(new FileReader(template));
 	}
 
+	/**
+	 * Creates a Template from the given File.
+	 *
+	 * @param template
+	 *            A file that points to a template.
+	 * @return A parsed Template that can be rendered.
+	 * @throws IOException
+	 *             If the given URL cannot connect.
+	 */
+	public static Template parse(URL template) throws IOException{
+		return new Template(new InputStreamReader(template.openStream()));
+	}
+	
 	/**
 	 * <p>
 	 * Renders the template with the given {@link Presenter}.
