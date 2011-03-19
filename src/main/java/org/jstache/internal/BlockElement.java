@@ -53,15 +53,15 @@ public class BlockElement extends KeyedElement implements Element,Iterable<Eleme
 		if(value instanceof Iterable){
 			StringBuilder buf = new StringBuilder();
 			for(Object thing : (Iterable<?>)value){
-				buf.append(new Renderer(elements,new BeanPresenter(thing)).execute());
+				buf.append(new TemplateRenderer(elements,new BeanPresenter(thing)).execute());
 			}
 			return buf.toString();
 		}
 
-		return (visible ^ inverted) ? new Renderer(elements,presenter).execute() : "";
+		return (visible ^ inverted) ? new TemplateRenderer(elements,presenter).execute() : "";
 	}
 
-	void add(Element element){
+	public void add(Element element){
 		elements.add(element);
 	}
 
@@ -79,5 +79,14 @@ public class BlockElement extends KeyedElement implements Element,Iterable<Eleme
 	@Override
 	public Iterator<Element> iterator(){
 		return elements.iterator();
+	}
+
+	@Override
+	public void unparse(TemplateBuffer buf){
+		buf.appendBegin().append(inverted?"^":"#").append(key).appendEnd();
+		for(Element element : elements){
+			element.unparse(buf);
+		}
+		buf.appendBegin().append("/").append(key).appendEnd();
 	}
 }

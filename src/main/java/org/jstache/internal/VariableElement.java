@@ -24,4 +24,9 @@ public class VariableElement extends KeyedElement implements Element{
 	public String toString(Presenter presenter){
 		return presenter.get(key).toString();
 	}
+
+	@Override
+	public void unparse(TemplateBuffer buf){
+		buf.appendBegin().append(key).appendEnd();
+	}
 }

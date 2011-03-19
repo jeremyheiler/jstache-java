@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.regex.Pattern;
 import org.jstache.ParseException;
 
-public class Lexer{
+public class TemplateLexer{
 	private final Pattern keyPattern = Pattern.compile("[#/^]?[a-zA-Z_][a-zA-Z0-9_]*");
 	private final List<TokenItem> tokens = new ArrayList<TokenItem>();
 	private final CharBuffer begin;
 	private final CharBuffer end;
 	private final CharBuffer buf;
 
-	public Lexer(String template,String begin,String end){
+	public TemplateLexer(String template,String begin,String end){
 		buf = CharBuffer.wrap(template).asReadOnlyBuffer();
 		this.begin = CharBuffer.wrap(begin);
 		this.end = CharBuffer.wrap(end);
@@ -61,6 +61,10 @@ public class Lexer{
 			else if(next == '/'){
 				buf.mark();
 				findTag(Token.END);
+			}
+			else if(next == '&'){
+				buf.mark();
+				findTag(Token.ESCAPE);
 			}
 			else{
 				findTag(Token.VARIABLE);

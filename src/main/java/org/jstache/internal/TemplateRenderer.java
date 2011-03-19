@@ -4,11 +4,11 @@ import java.util.List;
 import org.jstache.Element;
 import org.jstache.Presenter;
 
-public final class Renderer{
+public final class TemplateRenderer{
 	private final List<Element> elements;
 	private final Presenter presenter;
 
-	public Renderer(List<Element> elements,Presenter presenter){
+	public TemplateRenderer(List<Element> elements,Presenter presenter){
 		this.elements = elements;
 		this.presenter = presenter;
 	}

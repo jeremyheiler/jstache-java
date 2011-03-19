@@ -35,4 +35,9 @@ public class StringElement implements Element{
 	public String toString(Presenter presenter){
 		return value;
 	}
+
+	@Override
+	public void unparse(TemplateBuffer buf){
+		buf.append(value);
+	}
 }

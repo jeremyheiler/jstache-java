@@ -2,28 +2,59 @@ package org.jstache;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.Charset;
 
 public final class TemplateBuilder{
-	private final String begin;
-	private final String end;
-	
-	public TemplateBuilder(String begin,String end){
+	private volatile TemplateParser parser;
+	private Charset encoding;
+	private String begin;
+	private String end;
+	private Mode mode;
+
+	public TemplateBuilder(){}
+
+	public TemplateBuilder with(String begin,String end){
+		parser = null;
 		this.begin = begin;
 		this.end = end;
+		return this;
 	}
 
-	public Template parse(Reader template){
-		return new Template(template,begin,end);
+	public TemplateBuilder encodedAs(Charset encoding){
+		parser = null;
+		this.encoding = encoding;
+		return this;
 	}
 
-	public Template parse(String template){
-		return new Template(new StringReader(template),begin,end);
+	public TemplateBuilder inMode(Mode mode){
+		parser = null;
+		this.mode = mode;
+		return this;
 	}
 
-	public Template parse(File template) throws FileNotFoundException{
-		return new Template(new FileReader(template),begin,end);
+	public Template parse(InputStream source){
+		return buildParser().parse(source);
+	}
+
+	public Template parse(String source){
+		return buildParser().parse(source);
+	}
+
+	public Template parse(File source) throws FileNotFoundException{
+		return buildParser().parse(source);
+	}
+
+	public Template parse(URL source) throws IOException{
+		return buildParser().parse(source);
+	}
+
+	public TemplateParser buildParser(){
+		if(parser == null){
+			parser = new TemplateParser(encoding,begin,end,mode);
+		}
+		return parser;
 	}
 }
