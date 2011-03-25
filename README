@@ -1,1 +1,3 @@
-JStache is Mustache for Java (mustache.github.com)
+Jstache is a logic-less template library for Java that is based on Mustache (mustache.github.com)
+
+The current version is 1.0-SNAPSHOT. It will remain that way until it is stable enough to be officially released.
