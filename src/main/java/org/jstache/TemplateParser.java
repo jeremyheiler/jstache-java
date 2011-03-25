@@ -8,13 +8,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.jstache.internal.BlockElement;
+import org.jstache.internal.Element;
+import org.jstache.internal.InvertedBlockElement;
 import org.jstache.internal.StringElement;
-import org.jstache.internal.TemplateLexer;
 import org.jstache.internal.Token;
 import org.jstache.internal.TokenItem;
 import org.jstache.internal.VariableElement;
@@ -60,11 +64,11 @@ public final class TemplateParser{
 	private class Parser{
 		private final List<TokenItem> tokens;
 
-		Parser(String source){
-			tokens = Collections.unmodifiableList(new TemplateLexer(source,begin,end).run());
+		public Parser(String source){
+			tokens = Collections.unmodifiableList(new Lexer(source).run());
 		}
 
-		Parser(Reader source){
+		public Parser(Reader source){
 			try{
 				StringBuilder builder=new StringBuilder();
 				char[] cbuf=new char[1024];
@@ -72,18 +76,17 @@ public final class TemplateParser{
 				while((read=source.read(cbuf))!=-1){
 					builder.append(cbuf,0,read);
 				}
-				tokens = Collections.unmodifiableList(new TemplateLexer(builder.toString(),begin,end).run());
+				tokens = Collections.unmodifiableList(new Lexer(builder.toString()).run());
 			}
 			catch(IOException e){
 				throw new RuntimeException(e);
 			}
 		}
 
-		BlockElement parse(){
+		public List<Element> parse(){
 			BlockElement root = new BlockElement("__root__");
-			Iterator<TokenItem> items = tokens.iterator();
-			parse(items,root);
-			return root;
+			parse(tokens.iterator(),root);
+			return root.getElements();
 		}
 
 		private void parse(Iterator<TokenItem> items,BlockElement block){
@@ -102,7 +105,7 @@ public final class TemplateParser{
 					parse(items,next);
 				}
 				else if(token == Token.INVERTED){
-					BlockElement next = new BlockElement(item.getValue(),true);
+					InvertedBlockElement next = new InvertedBlockElement(item.getValue());
 					block.add(next);
 					parse(items,next);
 				}
@@ -110,17 +113,113 @@ public final class TemplateParser{
 					block.add(new VariableElement(mode.escape(item.getValue())));
 				}
 				else if(token == Token.END){
-					if(item.getValue().equals(block.getKey())){
+					if(item.getValue().equals(block.getName())){
 						return;
 					}
 					else{
-						throw new ParseException("Found "+begin+item.getValue()+end+" but expected "+begin+block.getKey()+end+".");
+						throw new ParseException("Found "+begin+item.getValue()+end+" but expected "+begin+block.getName()+end+".");
 					}
 				}
 			}
-			if(!block.getKey().equals("__root__")){
+			if(!block.getName().equals("__root__")){
 				throw new ParseException("Expecting a close delimiter");
 			}
+		}
+	}
+
+	private class Lexer{
+		private final Pattern keyPattern = Pattern.compile("[#/^]?([a-zA-Z_][a-zA-Z0-9_]*)|\\.");
+		private final List<TokenItem> tokens = new ArrayList<TokenItem>();
+		private final CharBuffer beginBuf;
+		private final CharBuffer endBuf;
+		private final CharBuffer buf;
+
+		public Lexer(String template){
+			buf = CharBuffer.wrap(template).asReadOnlyBuffer();
+			this.beginBuf = CharBuffer.wrap(begin);
+			this.endBuf = CharBuffer.wrap(end);
+		}
+
+		public List<TokenItem> run(){
+			buf.mark();
+			while(buf.hasRemaining()){
+				findGenericBegin();
+			}
+			if(buf.reset().position() != buf.limit()){
+				tokens.add(new TokenItem(Token.LITERAL,buf.toString()));
+			}
+			return tokens;
+		}
+
+		private void findGenericBegin(){
+			for(int i=0; i<beginBuf.length() && buf.hasRemaining(); ++i){
+				if(buf.charAt(i) != beginBuf.charAt(i)){
+					buf.get();
+					return;
+				}
+			}
+			int position = buf.position();
+			buf.limit(position).reset();
+			String literal = buf.toString();
+			if(!literal.isEmpty()){
+				tokens.add(new TokenItem(Token.LITERAL,literal));
+			}
+			buf.limit(buf.capacity()).position(position + beginBuf.length()).mark();
+			findKey();
+		}
+
+		private void findKey(){
+			if(buf.hasRemaining()){
+				char next = buf.get();
+				if(next == '#'){
+					buf.mark();
+					findTag(Token.BLOCK);
+				}
+				else if(next == '^'){
+					buf.mark();
+					findTag(Token.INVERTED);
+				}
+				else if(next == '/'){
+					buf.mark();
+					findTag(Token.END);
+				}
+				else if(next == '&'){
+					buf.mark();
+					findTag(Token.ESCAPE);
+				}
+				else{
+					findTag(Token.VARIABLE);
+				}
+			}
+		}
+
+		private void findTag(Token type){
+			while(buf.hasRemaining()){
+				if(findEnd(type)){
+					break;
+				}
+			}
+		}
+
+		private boolean findEnd(Token type){
+			for(int i=0; i<endBuf.length() && buf.hasRemaining(); ++i){
+				if(buf.charAt(i) != endBuf.charAt(i)){
+					buf.get();
+					return false;
+				}
+			}
+			int position = buf.position();
+			buf.limit(position).reset();
+			String key = buf.toString();
+			if(key.isEmpty()){
+				throw new ParseException("An empty key was found.");
+			}
+			if(!keyPattern.matcher(key).matches()){
+				throw new ParseException("The tag "+beginBuf+key+endBuf+" is invalid.");
+			}
+			tokens.add(new TokenItem(type,key));
+			buf.limit(buf.capacity()).position(position + endBuf.length()).mark();
+			return true;
 		}
 	}
 }

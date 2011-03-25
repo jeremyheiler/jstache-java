@@ -1,12 +1,13 @@
 package org.jstache.container;
 
+import org.jstache.provider.Provider;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
-import org.jstache.Presenter;
 import org.jstache.Template;
 import org.jstache.container.nop.NopCacheManager;
 import org.jstache.container.nop.NopLoader;
@@ -119,7 +120,7 @@ public final class TemplateContainer<K>{
 		return Template.with(begin,end).parse(source);
 	}
 
-	public String render(K key,Presenter presenter){
+	public String render(K key,Provider presenter){
 		Template template = cache.get(key);
 		checkNull(template);
 		return template.render(presenter);

@@ -20,13 +20,14 @@ public class Strings{
 	 * @param word
 	 * @return
 	 */
-	public static String toCamalCase(String word){
+	public static String toCamelCase(String word){
 		String[] parts=word.split("_");
 		if(parts.length==1)
 			return parts[0];
 		StringBuilder buf=new StringBuilder(parts[0]);
-		for(String part:parts)
-			buf.append(Strings.captialize(part));
+		for(int i=1; i<parts.length; ++i){
+			buf.append(Strings.captialize(parts[i]));
+		}
 		return buf.toString();
 	}
 }

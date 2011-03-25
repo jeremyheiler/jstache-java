@@ -6,17 +6,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Map;
-import org.jstache.internal.BeanPresenter;
-import org.jstache.internal.BlockElement;
-import org.jstache.internal.MapPresenter;
-import org.jstache.internal.TemplateRenderer;
-import org.jstache.internal.TemplateUnparser;
+import org.jstache.internal.Element;
+import org.jstache.internal.ProviderStack;
+import org.jstache.provider.BeanProvider;
+import org.jstache.provider.MapProvider;
+import org.jstache.provider.Provider;
 
 /**
  * An instance of <tt>Template</tt> represents a parsed, logic-less template.
  */
-public final class Template{
+public class Template{
 	public static final Charset DEFAULT_ENCODING = Charset.defaultCharset();
 	public static final String DEFAULT_BEGIN = "{{";
 	public static final String DEFAULT_END = "}}";
@@ -24,18 +25,14 @@ public final class Template{
 
 	//private static final Logger log = LoggerFactory.getLogger(Template.class);
 
-	private final BlockElement root;
+	private final List<Element> elements;
 	private final Charset encoding;
 	private final String begin;
 	private final String end;
 	private final Mode mode;
 
-	/**
-	 * Creates an unparsed template configured to parse the standard
-	 * "mustaches" for delimiters, that is "{{" and "}}".
-	 */
-	Template(BlockElement root,Charset encoding,String begin,String end,Mode mode){
-		this.root = root;
+	Template(List<Element> elements,Charset encoding,String begin,String end,Mode mode){
+		this.elements = elements;
 		this.encoding = encoding;
 		this.begin = begin;
 		this.end = end;
@@ -117,25 +114,14 @@ public final class Template{
 		return new TemplateBuilder().inMode(mode);
 	}
 
-	/**
-	 * <p>
-	 * Renders the template with the given {@link Presenter}.
-	 * </p>
-	 * <p>
-	 * The purpose of a {@link Presenter} is to encapsulate the structure of the
-	 * information that will be injected into the template. This method gives
-	 * you the option to implement your own {@link Presenter} and render the
-	 * template by your own rules. In fact, the other two render methods simply
-	 * delegate to the {@link MapPresenter} and the {@link BeanPresenter}.
-	 * </p>
-	 *
-	 * @param presenter
-	 * @return The rendered template.
-	 * @see MapPresenter
-	 * @see BeanPresenter
-	 */
-	public String render(Presenter presenter){
-		return new TemplateRenderer(root.getElements(),presenter).execute();
+	private String render(Provider provider){
+		StringBuilder buffer=new StringBuilder();
+		ProviderStack stack=new ProviderStack();
+		stack.push(provider);
+		for(Element element:elements){
+			element.render(buffer,stack);
+		}
+		return buffer.toString();
 	}
 
 	/**
@@ -145,10 +131,10 @@ public final class Template{
 	 *            The map of data with the key being the tag keys and the value
 	 *            being the values to be rendered into the template.
 	 * @return The rendered template.
-	 * @see MapPresenter
+	 * @see MapProvider
 	 */
 	public String render(Map<String,?> data){
-		return render(new MapPresenter(data));
+		return render(new MapProvider(data));
 	}
 
 	/**
@@ -159,33 +145,15 @@ public final class Template{
 	 * <p>
 	 * <strong>Note:</strong> The returned value of an invoked method is cached
 	 * and used again instead of invoking the method multiple times. See the
-	 * {@link BeanPresenter} for the complete set of rules.
+	 * {@link BeanProvider} for the complete set of rules.
 	 * </p>
 	 *
 	 * @param bean
 	 *            Any bean-like object.
 	 * @return The rendered template.
-	 * @see BeanPresenter
+	 * @see BeanProvider
 	 */
 	public <T> String render(T bean){
-		return render(new BeanPresenter<T>(bean));
-	}
-
-	/**
-	 *
-	 * @param begin
-	 * @param end
-	 * @return
-	 */
-	public String unparse(String begin,String end){
-		return new TemplateUnparser(root.getElements(),begin,end).unparse();
-	}
-
-	/**
-	 *
-	 * @return
-	 */
-	public String unparse(){
-		return unparse(begin,end);
+		return render(new BeanProvider<T>(bean));
 	}
 }

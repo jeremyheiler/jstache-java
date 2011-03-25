@@ -1,5 +1,7 @@
 package org.jstache.internal;
 
+import org.jstache.provider.BeanProvider;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.jstache.Template;
@@ -30,7 +32,7 @@ public class BeanPresenterTest{
 
 	@Test
 	public void testBean(){
-		BeanPresenter presenter = new BeanPresenter(new User("Sophie"));
+		BeanProvider presenter = new BeanProvider(new User("Sophie"));
 		String name = presenter.get("name").toString();
 		Assert.assertEquals("Sophie",name);
 	}

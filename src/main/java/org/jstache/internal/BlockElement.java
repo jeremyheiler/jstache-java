@@ -1,10 +1,11 @@
 package org.jstache.internal;
 
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import org.jstache.Element;
-import org.jstache.Presenter;
+import org.jstache.provider.BeanProvider;
+import org.jstache.provider.IterableProvider;
+import org.jstache.provider.LiteralProvider;
 
 /**
  * An element that represents a block or section of a template. A block consists
@@ -20,73 +21,72 @@ import org.jstache.Presenter;
  * An inverted block will be displayed if its mapped value is false, null, 0, or
  * an empty array or Iterable object. Otherwise the block will not be displayed.
  */
-public class BlockElement extends KeyedElement implements Element,Iterable<Element>{
-	private List<Element> elements=new ArrayList<Element>();
-	private final boolean inverted;
+public class BlockElement extends NamedElement implements Element,Iterable<Element>{
+	protected final List<Element> elements=new LinkedList<Element>();
 
-	/**
-	 * Creates an element representing a non-inverted template block.
-	 * @param key The key identifying the element.
-	 */
-	public BlockElement(String key){
-		this(key,false);
+	public BlockElement(String name){
+		super(name);
 	}
 
-	/**
-	 * Creates and element representing a block or section of a template with
-	 * the given invertedness.
-	 * @param key The key identifying the element.
-	 */
-	public BlockElement(String key,boolean inverted){
-		super(key);
-		this.inverted=inverted;
-	}
-
-	/**
-	 * Returns the value mapped to this element's key.
-	 */
 	@Override
-	public String toString(Presenter presenter){
-		Object value = presenter.get(key);
-		boolean visible = (value != null && value != Boolean.FALSE && value != new Integer(0));
+	public void render(StringBuilder buffer,ProviderStack stack){
+		Object value=stack.peek().get(name);
 
-		if(value instanceof Iterable){
-			StringBuilder buf = new StringBuilder();
-			for(Object thing : (Iterable<?>)value){
-				buf.append(new TemplateRenderer(elements,new BeanPresenter(thing)).execute());
-			}
-			return buf.toString();
+		if(value==null || value==Integer.valueOf(0)){
+			return;
 		}
 
-		return (visible ^ inverted) ? new TemplateRenderer(elements,presenter).execute() : "";
+		if(value instanceof Boolean){
+			if(((Boolean)value).booleanValue()){
+				renderElements(buffer,stack);
+			}
+			else{
+				return;
+			}
+		}
+		else if(value instanceof Iterable){
+			for(Object object:(Iterable<?>)value){
+				if(object instanceof Iterable){
+					stack.push(new IterableProvider((Iterable<?>)object));
+				}
+				else if(object instanceof String || object instanceof Number || object instanceof Boolean || object instanceof Character){
+					stack.push(new LiteralProvider(object));
+				}
+				else{
+					stack.push(new BeanProvider<Object>(object));
+				}
+				renderElements(buffer,stack);
+				stack.pop();
+			}
+		}
+		else if(value instanceof Integer){
+			for(int i=1; i<=(Integer)value; ++i){
+				stack.push(new LiteralProvider(i));
+				renderElements(buffer,stack);
+				stack.pop();
+			}
+		}
+		else{
+			renderElements(buffer,stack);
+		}
+	}
+
+	protected void renderElements(StringBuilder buffer,ProviderStack stack){
+		for(Element element:elements){
+			element.render(buffer,stack);
+		}
 	}
 
 	public void add(Element element){
 		elements.add(element);
 	}
 
-	/**
-	 * Returns the list of {@link Element}s in the block.
-	 * @return The list of {@link Element}s in the block.
-	 */
 	public List<Element> getElements(){
 		return elements;
 	}
 
-	/**
-	 *
-	 */
 	@Override
 	public Iterator<Element> iterator(){
 		return elements.iterator();
-	}
-
-	@Override
-	public void unparse(TemplateBuffer buf){
-		buf.appendBegin().append(inverted?"^":"#").append(key).appendEnd();
-		for(Element element : elements){
-			element.unparse(buf);
-		}
-		buf.appendBegin().append("/").append(key).appendEnd();
 	}
 }

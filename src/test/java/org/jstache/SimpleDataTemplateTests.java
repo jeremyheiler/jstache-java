@@ -1,6 +1,8 @@
 package org.jstache;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -9,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 
 public class SimpleDataTemplateTests{
 	public static Map<String,Object> data=new HashMap<String,Object>();
+	public static final Hello bean=new Hello();
 
 	@BeforeClass
 	public static void setupData(){
@@ -20,17 +23,12 @@ public class SimpleDataTemplateTests{
 
 	@Test
 	public void testVariable(){
-		assertTrue(Template.parse("{{name}}").render(data).equals("Sophie"));
+		assertTrue(Template.parse("{{name}}").render(bean).equals("Sophie"));
 	}
 
 	@Test
 	public void testTextAndVariable(){
-		assertTrue(Template.parse("Hello {{name}}").render(data).equals("Hello Sophie"));
-	}
-
-	@Test
-	public void testAnotherTextAndVariable(){
-		assertTrue(Template.parse("Hello {{name}}!").render(data).equals("Hello Sophie!"));
+		assertTrue(Template.parse("Hello {{name}}!").render(bean).equals("Hello Sophie!"));
 	}
 
 	@Test
@@ -80,7 +78,7 @@ public class SimpleDataTemplateTests{
 
 	@Test
 	public void testTruthyIfBlock(){
-		String output=Template.parse("{{#greeting}}yeah{{/greeting}} yeah").render(data);
+		String output=Template.parse("{{#yeah}}yeah{{/yeah}} yeah").render(bean);
 		assertTrue(output.equals("yeah yeah"));
 	}
 
@@ -90,18 +88,35 @@ public class SimpleDataTemplateTests{
 		assertTrue(output.equals("yeah yeah"));
 	}
 
-//	@Test
-//	public void testLoopListBlockTemplate(){
-//		Template template=Template.parse("My dogs are: {{#dogs}}{{name}},{{/dogs}}");
-//		final Map<String,Object> data=new HashMap<String,Object>();
-//		final List<String> dogs=new ArrayList<String>();
-//		dogs.add("Sophie");
-//		dogs.add("Riley");
-//		dogs.add("Duke");
-//		dogs.add("Schultz");
-//		dogs.add("Arthur");
-//		data.put("dogs",dogs);
-//		String result=template.render(data);
-//		assertTrue(result.equals("My dogs are: Sophie, Riley, Duke, Schultz, Arthur,"));
-//	}
+	@Test
+	public void testLoopListBlockTemplate(){
+		Template template=Template.parse("My dogs are:{{#dogs}} {{.}}{{/dogs}}");
+		String result=template.render(bean);
+		assertTrue(result.equals("My dogs are: Sophie Riley Duke Schultz Arthur"));
+	}
+
+	public static class Hello{
+
+		public String getName(){
+			return "Sophie";
+		}
+
+		public String getGreeting(){
+			return "Hola";
+		}
+
+		public boolean isYeah(){
+			return true;
+		}
+
+		public List<String> getDogs(){
+			List<String> dogs=new ArrayList<String>();
+			dogs.add("Sophie");
+			dogs.add("Riley");
+			dogs.add("Duke");
+			dogs.add("Schultz");
+			dogs.add("Arthur");
+			return dogs;
+		}
+	}
 }
