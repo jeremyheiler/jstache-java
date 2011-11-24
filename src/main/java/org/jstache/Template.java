@@ -15,145 +15,159 @@ import org.jstache.provider.MapProvider;
 import org.jstache.provider.Provider;
 
 /**
- * An instance of <tt>Template</tt> represents a parsed, logic-less template.
+ * <p>A <code>Template</code> represents a parsed, logic-less template.</p>
  */
 public class Template{
-	public static final Charset DEFAULT_ENCODING = Charset.defaultCharset();
-	public static final String DEFAULT_BEGIN = "{{";
-	public static final String DEFAULT_END = "}}";
-	public static final Mode DEFAULT_MODE = Modes.NORMAL;
+    //private static final Logger log = LoggerFactory.getLogger(Template.class);
+    private final List<Element> elements;
+    private final Charset encoding;
+    private final String begin;
+    private final String end;
+    private final Mode mode;
 
-	//private static final Logger log = LoggerFactory.getLogger(Template.class);
+    /**
+     * <p>The default encoding is set to the platforms default charset.</p>
+     */
+    public static final Charset DEFAULT_ENCODING = Charset.defaultCharset();
 
-	private final List<Element> elements;
-	private final Charset encoding;
-	private final String begin;
-	private final String end;
-	private final Mode mode;
+    /**
+     * <p>the default begin delimiter is <code>{{</code>.</p>
+     */
+    public static final String DEFAULT_BEGIN = "{{";
 
-	Template(List<Element> elements,Charset encoding,String begin,String end,Mode mode){
-		this.elements = elements;
-		this.encoding = encoding;
-		this.begin = begin;
-		this.end = end;
-		this.mode = mode;
-	}
+    /**
+     * <p>the default end delimiter is <code>}}</code>.</p>
+     */
+    public static final String DEFAULT_END = "}}";
 
-	/**
-	 * Creates a Template from from contents of the given {@link InputStream}.
-	 *
-	 * @param source
-	 * @return A parsed Template that can be rendered.
-	 */
-	public static Template parse(InputStream source){
-		return new TemplateParser(DEFAULT_ENCODING,DEFAULT_BEGIN,DEFAULT_END,DEFAULT_MODE).parse(source);
-	}
+    /**
+     *
+     */
+    public static final Mode DEFAULT_MODE = Modes.DEFAULT;
 
-	/**
-	 * Creates a Template from the given String.
-	 *
-	 * @param template
-	 *            A String that represents a template.
-	 * @return A parsed Template that can be rendered.
-	 */
-	public static Template parse(String source){
-		return new TemplateParser(DEFAULT_ENCODING,DEFAULT_BEGIN,DEFAULT_END,DEFAULT_MODE).parse(source);
-	}
+    /**
+     *
+     */
+    Template(List<Element> elements, Charset encoding, String begin, String end, Mode mode){
+        this.elements = elements;
+        this.encoding = encoding;
+        this.begin = begin;
+        this.end = end;
+        this.mode = mode;
+    }
 
-	/**
-	 * Creates a Template from the given File.
-	 *
-	 * @param template
-	 *            A file that points to a template.
-	 * @return A parsed Template that can be rendered.
-	 * @throws FileNotFoundException
-	 *             If the given file does not exist.
-	 */
-	public static Template parse(File source) throws FileNotFoundException{
-		return new TemplateParser(DEFAULT_ENCODING,DEFAULT_BEGIN,DEFAULT_END,DEFAULT_MODE).parse(source);
-	}
+    /**
+     * Creates a Template from from contents of the given {@link InputStream}.
+     *
+     * @param source
+     * @return A parsed Template that can be rendered.
+     */
+    public static Template parse(InputStream source){
+        return new Parser(DEFAULT_ENCODING, DEFAULT_BEGIN, DEFAULT_END, DEFAULT_MODE).parse(source);
+    }
 
-	/**
-	 * Creates a Template from the given File.
-	 *
-	 * @param template
-	 *            A file that points to a template.
-	 * @return A parsed Template that can be rendered.
-	 * @throws IOException
-	 *             If the given URL cannot connect.
-	 */
-	public static Template parse(URL source) throws IOException{
-		return new TemplateParser(DEFAULT_ENCODING,DEFAULT_BEGIN,DEFAULT_END,DEFAULT_MODE).parse(source);
-	}
+    /**
+     * Creates a Template from the given String.
+     *
+     * @param template
+     *            A String that represents a template.
+     * @return A parsed Template that can be rendered.
+     */
+    public static Template parse(String source){
+        return new Parser(DEFAULT_ENCODING, DEFAULT_BEGIN, DEFAULT_END, DEFAULT_MODE).parse(source);
+    }
 
-	/**
-	 *
-	 * @param begin
-	 * @param end
-	 * @return
-	 */
-	public static TemplateBuilder with(String begin,String end){
-		return new TemplateBuilder().with(begin,end);
-	}
+    /**
+     * Creates a Template from the given File.
+     *
+     * @param template
+     *            A file that points to a template.
+     * @return A parsed Template that can be rendered.
+     * @throws FileNotFoundException
+     *             If the given file does not exist.
+     */
+    public static Template parse(File source) throws FileNotFoundException{
+        return new Parser(DEFAULT_ENCODING, DEFAULT_BEGIN, DEFAULT_END, DEFAULT_MODE).parse(source);
+    }
 
-	/**
-	 *
-	 * @param encoding
-	 * @return
-	 */
-	public static TemplateBuilder encodedAs(Charset encoding){
-		return new TemplateBuilder().encodedAs(encoding);
-	}
+    /**
+     * Creates a Template from the given File.
+     *
+     * @param template
+     *            A file that points to a template.
+     * @return A parsed Template that can be rendered.
+     * @throws IOException
+     *             If the given URL cannot connect.
+     */
+    public static Template parse(URL source) throws IOException{
+        return new Parser(DEFAULT_ENCODING, DEFAULT_BEGIN, DEFAULT_END, DEFAULT_MODE).parse(source);
+    }
 
-	/**
-	 *
-	 * @param mode
-	 * @return
-	 */
-	public static TemplateBuilder inMode(Mode mode){
-		return new TemplateBuilder().inMode(mode);
-	}
+    /**
+     * Specify the delimiters to parse a template with.
+     */
+    public static ParserBuilder with(String begin, String end){
+        return new ParserBuilder().with(begin, end);
+    }
 
-	private String render(Provider provider){
-		StringBuilder buffer=new StringBuilder();
-		ProviderStack stack=new ProviderStack();
-		stack.push(provider);
-		for(Element element:elements){
-			element.render(buffer,stack);
-		}
-		return buffer.toString();
-	}
+    /**
+     *
+     */
+    public static ParserBuilder encodedAs(Charset encoding){
+        return new ParserBuilder().encodedAs(encoding);
+    }
 
-	/**
-	 * Renders the template with the values from the given <tt>Map</tt>.
-	 *
-	 * @param data
-	 *            The map of data with the key being the tag keys and the value
-	 *            being the values to be rendered into the template.
-	 * @return The rendered template.
-	 * @see MapProvider
-	 */
-	public String render(Map<String,?> data){
-		return render(new MapProvider(data));
-	}
+    /**
+     *
+     */
+    public static ParserBuilder inMode(Mode mode){
+        return new ParserBuilder().inMode(mode);
+    }
 
-	/**
-	 * <p>
-	 * Renders the template by converting tag names into methods and dynamically
-	 * invoking them and inserting their returned value into the template.
-	 * </p>
-	 * <p>
-	 * <strong>Note:</strong> The returned value of an invoked method is cached
-	 * and used again instead of invoking the method multiple times. See the
-	 * {@link BeanProvider} for the complete set of rules.
-	 * </p>
-	 *
-	 * @param bean
-	 *            Any bean-like object.
-	 * @return The rendered template.
-	 * @see BeanProvider
-	 */
-	public <T> String render(T bean){
-		return render(new BeanProvider<T>(bean));
-	}
+    /**
+     *
+     */
+    private String render(Provider provider){
+        StringBuilder buffer = new StringBuilder();
+        ProviderStack stack = new ProviderStack();
+        stack.push(provider);
+        for(Element element : elements){
+            element.render(buffer, stack);
+        }
+        return buffer.toString();
+    }
+
+    /**
+     * Renders the template with the values from the given <tt>Map</tt>.
+     *
+     * @param data
+     *            The map of data with the key being the tag keys and the value
+     *            being the values to be rendered into the template.
+     * @return The rendered template.
+     * @see MapProvider
+     */
+    public String render(Map<String,?> data){
+        return render(new MapProvider(data));
+    }
+
+    /**
+     * <p>
+     * Renders the template by converting tag names into methods and dynamically
+     * invoking them and inserting their returned value into the template.
+     * </p>
+     * <p>
+     * <strong>Note:</strong> The returned value of an invoked method is cached
+     * and used again instead of invoking the method multiple times. See the
+     * {@link BeanProvider} for the complete set of rules.
+     * </p>
+     *
+     * @param bean
+     *            Any bean-like object.
+     * @return The rendered template.
+     * @see BeanProvider
+     */
+    public <T> String render(T bean){
+        return render(new BeanProvider<T>(bean));
+    }
 }
+

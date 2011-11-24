@@ -10,37 +10,38 @@ import org.junit.Test;
 
 public class BeanPresenterTest{
 
-	class User{
-		private final String name;
+    public class User{
+        private final String name;
 
-		public User(String name){
-			this.name = name;
-		}
+        public User(String name){
+            this.name = name;
+        }
 
-		public String getName(){
-			return name;
-		}
+        public String getName(){
+            return name;
+        }
 
-		public List<User> getFriends(){
-			List<User> friends = new ArrayList<User>();
-			friends.add(new User("Riley"));
-			friends.add(new User("Pepper"));
-			friends.add(new User("Molly"));
-			return friends;
-		}
-	}
+        public List<User> getFriends(){
+            List<User> friends = new ArrayList<User>();
+            friends.add(new User("Riley"));
+            friends.add(new User("Pepper"));
+            friends.add(new User("Molly"));
+            return friends;
+        }
+    }
 
-	@Test
-	public void testBean(){
-		BeanProvider presenter = new BeanProvider(new User("Sophie"));
-		String name = presenter.get("name").toString();
-		Assert.assertEquals("Sophie",name);
-	}
+    @Test
+    public void testBean(){
+        BeanProvider presenter = new BeanProvider(new User("Sophie"));
+        String name = presenter.get("name").toString();
+        Assert.assertEquals("Sophie", name);
+    }
 
-	@Test
-	public void testIterable(){
-		Template template = Template.parse("{{#friends}}{{name}}{{/friends}}");
-		String output = template.render(new User("Sophie"));
-		Assert.assertEquals("RileyPepperMolly",output);
-	}
+    @Test
+    public void testIterable(){
+        Template template = Template.parse("{{#friends}}{{name}}{{/friends}}");
+        String output = template.render(new User("Sophie"));
+        Assert.assertEquals("RileyPepperMolly", output);
+    }
 }
+
